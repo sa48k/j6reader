@@ -12,34 +12,50 @@ fn main() {
         .expect("Failed to read file");
     
     let sequence = parse_sequence(&contents);
-    println!("Sequence has a tempo of {}", sequence.tempo/100);
+    println!("Tempo: {}", sequence.tempo/100.0);
+    println!("Beat: {}", sequence.beat);
+    println!("Filter: {}", sequence.filter);
 }
 
 struct Config {
     options: String,
     file_path: String,
 }
-
+ 
 struct SequenceOptions {
-    // beat: i16,
+    beat: f32,
     // transpose: i16,
-    tempo: i32,
-    // filter: i16,
+    tempo: f32,
+    filter: f32,
     // variation: i16,
     // style_sw: i16,
 }
 
 // bars: [u8; 4]
 
+fn find_setting(contents: &str, setting: &str) -> f32 {
+    // search the file contents for an occurence of a setting
+    // e.g. BEAT, GENRE, or TRANSPOSE
+    // return its associated value as an f32 to be stored in the struct
+    
+    contents
+        .lines()
+        .find(|line| line.starts_with(setting))
+        .unwrap()
+        .split('=')
+        .last()
+        .unwrap()
+        .trim()
+        .parse::<f32>()
+        .unwrap()
+}
+
 fn parse_sequence(contents: &String) -> SequenceOptions {
-    let mut tempo: i32 = 0;
-    for line in contents.lines() {
-        if line.contains("TEMPO") {
-            // split at the equals, grab the string to the right, trim it, parse it to an integer
-            tempo = line.split("=").nth(1).unwrap().trim().parse::<i32>().unwrap();
-        }
-    }
-    SequenceOptions { tempo }
+    let tempo = find_setting(contents, "TEMPO");
+    let beat = find_setting(contents, "BEAT");
+    let filter = find_setting(contents, "FILTER");
+
+    SequenceOptions { tempo, beat, filter }
 }
 
 fn parse_config(args: &[String]) -> Config {
