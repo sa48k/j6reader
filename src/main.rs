@@ -1,3 +1,6 @@
+// Roland J-6 Reader
+// cd /mnt/c/Users/super/Documents/dev/j6reader
+
 use std::env;
 use std::fs;
 
@@ -8,20 +11,20 @@ fn main() {
 
     println!("{} (options: {})", config.file_path, config.options);
 
-    let contents = fs::read_to_string(config.file_path)
-        .expect("Failed to read file");
-    
+    let contents = fs::read_to_string(config.file_path).expect("Failed to read file");
+
     let sequence = parse_sequence(&contents);
-    println!("Tempo: {}", sequence.tempo/100.0);
+    println!("Tempo: {}", sequence.tempo / 100.0);
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
+    // dbg!(sequence.bar);
 }
 
 struct Config {
     options: String,
     file_path: String,
 }
- 
+
 struct SequenceOptions {
     beat: f32,
     // transpose: i16,
@@ -29,15 +32,13 @@ struct SequenceOptions {
     filter: f32,
     // variation: i16,
     // style_sw: i16,
+    bar: [i32; 4], // bars: [[u8; 4]; 64]
 }
 
-// bars: [u8; 4]
-
-fn find_setting(contents: &str, setting: &str) -> f32 {
+fn read_setting(contents: &str, setting: &str) -> f32 {
     // search the file contents for an occurence of a setting
     // e.g. BEAT, GENRE, or TRANSPOSE
     // return its associated value as an f32 to be stored in the struct
-    
     contents
         .lines()
         .find(|line| line.starts_with(setting))
@@ -50,12 +51,37 @@ fn find_setting(contents: &str, setting: &str) -> f32 {
         .unwrap()
 }
 
-fn parse_sequence(contents: &String) -> SequenceOptions {
-    let tempo = find_setting(contents, "TEMPO");
-    let beat = find_setting(contents, "BEAT");
-    let filter = find_setting(contents, "FILTER");
+fn read_bars(contents: &str) -> [i32; 4] {
+    let mut bar: [i32; 4] = [0; 4];
+    for line in contents.lines() {
+        if line.starts_with("BAR") {
+            let mut count = 0;
+            for token in line.split(' ') {
+                if token.starts_with("NOTE") {
+                    let note: i32 = token.split("=").last().unwrap().trim().parse::<i32>().unwrap();
+                    bar[count] = note;
+                    count += 1;
+                }
+            }
+            dbg!(bar);
+        }
+    }
 
-    SequenceOptions { tempo, beat, filter }
+    bar
+}
+
+fn parse_sequence(contents: &str) -> SequenceOptions {
+    let tempo = read_setting(&contents, "TEMPO");
+    let beat = read_setting(&contents, "BEAT");
+    let filter = read_setting(&contents, "FILTER");
+
+    let bar = read_bars(&contents);
+    SequenceOptions {
+        tempo,
+        beat,
+        filter,
+        bar,
+    }
 }
 
 fn parse_config(args: &[String]) -> Config {
@@ -68,5 +94,3 @@ fn parse_config(args: &[String]) -> Config {
 
     Config { file_path, options }
 }
-
-
