@@ -14,14 +14,14 @@ fn main() {
     println!("{} (options: {})", config.file_path, config.options);
 
     let contents = fs::read_to_string(config.file_path).expect("Failed to read file");
-
     let sequence = parse_sequence(&contents);
+
     println!("Tempo: {}", sequence.tempo / 100.0);
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
-    // dbg!(sequence.bars);
-    let notes = parse_notes(sequence.bars);
-    dbg!(notes);
+    println!("Measures: {}", sequence.meas);
+    let note_lookup = parse_notes(sequence.bars);
+    // dbg!(notes);
 }
 
 struct Config {
@@ -42,11 +42,23 @@ struct SequenceOptions {
 }
 
 fn parse_notes(bars: [[i32; 4]; 64]) -> HashMap<usize, String> {
-    // this is a stupid way to do this. split a string instead ('C.C#.D.D#.etc...')
-    let all_notes: [String; 12] = [String::from("C"), String::from("C#"), String::from("D"), String::from("D#"), String::from("E"), String::from("F"), String::from("F#"), String::from("G"), String::from("G#"), String::from("A"), String::from("A#"), String::from("B") ];
+    let all_notes = "C.C#.D.D#.E.F.F#.G.G#.A.A#.B";
+    let split_notes: Vec<String> = all_notes.split(".").map(|s| s.to_string()).collect();
+    // println!("{:?}", split_notes);
+
     let mut note_lookup = HashMap::new();
     for x in 0..96 {
-        note_lookup.insert(x, all_notes[x % 12].clone());
+        note_lookup.insert(x, split_notes[x % 12].clone());
+    }
+
+    // let mut song = 
+    for bar in &bars {
+        for value in bar {
+            let value: i32 = *value;
+            let note: String = note_lookup[&((value as usize) % 12)].clone();
+            let octave: f32 = (value as f32 / 12.0).floor();
+            println!("{:?}, {:?}", note, octave);
+        }
     }
     note_lookup
 }
