@@ -20,8 +20,8 @@ fn main() {
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
     println!("Measures: {}", sequence.meas);
-    let note_lookup = parse_notes(sequence.bars);
-    // dbg!(notes);
+    let song: Vec<String> = convert_bars_to_strings(sequence.bars);
+    dbg!(song);
 }
 
 struct Config {
@@ -41,7 +41,7 @@ struct SequenceOptions {
     bars: [[i32; 4]; 64]
 }
 
-fn parse_notes(bars: [[i32; 4]; 64]) -> HashMap<usize, String> {
+fn generate_notes_hashmap() -> HashMap<usize, String> {
     let all_notes = "C.C#.D.D#.E.F.F#.G.G#.A.A#.B";
     let split_notes: Vec<String> = all_notes.split(".").map(|s| s.to_string()).collect();
     // println!("{:?}", split_notes);
@@ -51,16 +51,25 @@ fn parse_notes(bars: [[i32; 4]; 64]) -> HashMap<usize, String> {
         note_lookup.insert(x, split_notes[x % 12].clone());
     }
 
-    // let mut song = 
+    note_lookup
+}
+
+fn convert_bars_to_strings(bars: [[i32; 4]; 64]) -> Vec<String> {
+    let mut song: Vec<String> = vec![];
+    let note_lookup = generate_notes_hashmap();
+
     for bar in &bars {
         for value in bar {
             let value: i32 = *value;
+            // todo: check that value isn't -1
             let note: String = note_lookup[&((value as usize) % 12)].clone();
             let octave: f32 = (value as f32 / 12.0).floor();
-            println!("{:?}, {:?}", note, octave);
+            let octave_str: String = octave.to_string();
+            let output: String = note + &octave_str;
+            song.push(output);
         }
     }
-    note_lookup
+    song
 }
 
 fn read_setting(contents: &str, setting: &str) -> f32 {
@@ -115,6 +124,7 @@ fn parse_sequence(contents: &str) -> SequenceOptions {
     let beat = read_setting(&contents, "BEAT");
     let meas = read_setting(&contents, "MEAS");
     let filter = read_setting(&contents, "FILTER");
+    
     let bars = read_bars(&contents);
 
     SequenceOptions {
