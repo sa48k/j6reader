@@ -20,8 +20,19 @@ fn main() {
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
     println!("Measures: {}", sequence.meas);
-    let song: Vec<String> = convert_bars_to_strings(sequence.bars);
-    dbg!(song);
+
+    // TODO: get pattern number + bank number from filename
+    let full_song: Vec<String> = convert_bars_to_strings(sequence.bars);
+    let x = (sequence.meas * 4.0) as usize;
+    let song = &full_song[0..x];
+    // dbg!(&song);
+    for (idx, note) in song.iter().enumerate() {
+        print!("{} ", note);
+        if (idx+1) % 4 == 0 {
+            println!();
+        }
+
+    }
 }
 
 struct Config {
@@ -31,26 +42,21 @@ struct Config {
 
 struct SequenceOptions {
     beat: f32,
-    meas: f32,          // number of measures (bars)
-    // transpose: i16,
+    meas: f32,              // number of measures (bars)
     tempo: f32,
     filter: f32,
-    // variation: i16,
-    // style_sw: i16,
-    // bar: [i32; 4], 
-    bars: [[i32; 4]; 64]
+    bars: [[i32; 4]; 64]    // contains raw note values from the J-6, e.g. [38, 53, 55, 60] x64
 }
 
 fn generate_notes_hashmap() -> HashMap<usize, String> {
-    let all_notes = "C.C#.D.D#.E.F.F#.G.G#.A.A#.B";
-    let split_notes: Vec<String> = all_notes.split(".").map(|s| s.to_string()).collect();
-    // println!("{:?}", split_notes);
-
+    let notes_string = "C.C#.D.D#.E.F.F#.G.G#.A.A#.B";
+    let split_notes: Vec<String> = notes_string.split(".").map(|s| s.to_string()).collect();
     let mut note_lookup = HashMap::new();
-    for x in 0..96 {
+
+    for x in 0..95 {
         note_lookup.insert(x, split_notes[x % 12].clone());
     }
-
+    
     note_lookup
 }
 
@@ -61,12 +67,15 @@ fn convert_bars_to_strings(bars: [[i32; 4]; 64]) -> Vec<String> {
     for bar in &bars {
         for value in bar {
             let value: i32 = *value;
-            // todo: check that value isn't -1
-            let note: String = note_lookup[&((value as usize) % 12)].clone();
-            let octave: f32 = (value as f32 / 12.0).floor();
-            let octave_str: String = octave.to_string();
-            let output: String = note + &octave_str;
-            song.push(output);
+            // check that value isn't -1. if it is, return '--' (no note)
+            if value == -1 {
+                song.push("--".to_string());
+            } else {
+                let mut note: String = note_lookup[&((value as usize) % 12)].clone();   // gets the note (C, F, G, G#, etc.) as String
+                let octave: f32 = (value as f32 / 12.0).floor();                        // calculate the octave
+                note.push_str(&(octave.to_string()));                                   // concat the strings
+                song.push(note);
+            }
         }
     }
     song
