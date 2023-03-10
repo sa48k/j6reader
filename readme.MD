@@ -1,6 +1,8 @@
 # Roland J-6 Reader
 
-Read sequence data from the .PRM files stored on a Roland J-6 synthesiser. To get these files, connect your J-6 to your PC using USB then hold Play when switching it on, then open the BACKUP directory.
+Read sequence data from the .PRM files stored on a Roland J-6 synthesiser. 
+
+To get these files, connect your J-6 to your PC using USB. Hold the Play button while switching it on, wait for it to mount, then open the BACKUP directory.
 
 ## Usage
 

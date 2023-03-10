@@ -2,6 +2,7 @@
 // cd /mnt/c/Users/super/Documents/dev/j6reader
 
 use std::env;
+use std::fmt;
 use std::fs;
 use std::collections::HashMap;
 
@@ -11,28 +12,24 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let config = parse_config(&args);
 
-    println!("{} (options: {})", config.file_path, config.options);
+    // println!("{} (options: {})", config.file_path, config.options);
 
-    let contents = fs::read_to_string(config.file_path).expect("Failed to read file");
+    let contents = fs::read_to_string(&config.file_path).expect("Failed to read file");
     let sequence = parse_sequence(&contents);
+    let pattern: (i32, i32) = get_pattern_number(&config.file_path);
 
+    // TODO: move all this into generate_display?
     println!("Tempo: {}", sequence.tempo / 100.0);
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
     println!("Measures: {}", sequence.meas);
-
-    // TODO: get pattern number + bank number from filename
+    println!("{:?}", pattern);
+    
     let full_song: Vec<String> = convert_bars_to_strings(sequence.bars);
-    let x = (sequence.meas * 4.0) as usize;
-    let song = &full_song[0..x];
-    // dbg!(&song);
-    for (idx, note) in song.iter().enumerate() {
-        print!("{} ", note);
-        if (idx+1) % 4 == 0 {
-            println!();
-        }
-
-    }
+    let number_of_bars = (sequence.meas * 4.0) as usize;    // get number of bars
+    let song = &full_song[0..number_of_bars].to_vec();      // so we don't display null bars
+    let display = generate_display(song);
+    println!("{}", display);
 }
 
 struct Config {
@@ -46,6 +43,38 @@ struct SequenceOptions {
     tempo: f32,
     filter: f32,
     bars: [[i32; 4]; 64]    // contains raw note values from the J-6, e.g. [38, 53, 55, 60] x64
+}
+
+fn get_pattern_number(filename: &str) -> (i32, i32) {
+    let file_number: i32 = filename[6..8].parse().unwrap();
+    println!("{}", file_number);
+    let bank: i32 = (file_number as f32 / 8.0).ceil() as i32;
+    println!("{}", bank);
+    let pattern: i32 = file_number - (8 * (&bank-1));
+
+    (bank, pattern)
+}
+
+
+fn generate_display(song: &Vec<String>) -> String {
+    let mut output = String::new();
+
+    // add a header line showing the bar number (1-8 or whatever)
+    for i in 0..(song.len()/4) {
+        output += &(i+1).to_string();
+        output += "\t";
+    }
+    output += "\n\n";
+
+    for y in 0..4 {                          // note1/2/3/4
+        for x in 0..((song.len()/4)) {           // bar number
+            output += &song[x*4+y];
+            output += "\t";
+        }
+        output += "\n";
+    }
+
+    output
 }
 
 fn generate_notes_hashmap() -> HashMap<usize, String> {
