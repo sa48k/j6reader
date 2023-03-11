@@ -16,14 +16,14 @@ fn main() {
 
     let contents = fs::read_to_string(&config.file_path).expect("Failed to read file");
     let sequence = parse_sequence(&contents);
-    let pattern: (i32, i32) = get_pattern_number(&config.file_path);
+    let pattern_numbers: PatternNumbers = get_pattern_number(&config.file_path);
 
     // TODO: move all this into generate_display?
     println!("Tempo: {}", sequence.tempo / 100.0);
     println!("Beat: {}", sequence.beat);
     println!("Filter: {}", sequence.filter);
     println!("Measures: {}", sequence.meas);
-    println!("{:?}", pattern);
+    println!("Pattern bank: {}", pattern_numbers);
     
     let full_song: Vec<String> = convert_bars_to_strings(sequence.bars);
     let number_of_bars = (sequence.meas * 4.0) as usize;    // get number of bars
@@ -33,11 +33,19 @@ fn main() {
 }
 
 struct Config {
-    options: String,
+    options: String,        // todo: do something with this
     file_path: String,
 }
 
-struct SequenceOptions {
+struct PatternNumbers(i32, i32);
+
+impl fmt::Display for PatternNumbers {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}-{}", self.0, self.1)
+    }
+}
+
+struct J6Data {
     beat: f32,
     meas: f32,              // number of measures (bars)
     tempo: f32,
@@ -45,14 +53,22 @@ struct SequenceOptions {
     bars: [[i32; 4]; 64]    // contains raw note values from the J-6, e.g. [38, 53, 55, 60] x64
 }
 
-fn get_pattern_number(filename: &str) -> (i32, i32) {
+fn get_pattern_number(filename: &str) -> PatternNumbers {
+    // this is bad and will panic if the file isn't in 
+    // the directory that we're running this program from
     let file_number: i32 = filename[6..8].parse().unwrap();
-    println!("{}", file_number);
+    // todo: regex
+    // let s = "/data/J6_PTN25.PRM/J6_PTN25.PRM";
+    // let parts: Vec<&str> = s.split('/').collect();
+    // let last_part = parts.last().unwrap();
+    // let number_str = last_part[7..9].to_owned();
+    // let number = number_str.parse::<i32>().unwrap();
+    // println!("{}", number); // prints "25"
+
     let bank: i32 = (file_number as f32 / 8.0).ceil() as i32;
-    println!("{}", bank);
     let pattern: i32 = file_number - (8 * (&bank-1));
 
-    (bank, pattern)
+    PatternNumbers(bank, pattern)
 }
 
 
@@ -157,7 +173,7 @@ fn read_bars(contents: &str) -> [[i32; 4]; 64] {
     bars
 }
 
-fn parse_sequence(contents: &str) -> SequenceOptions {
+fn parse_sequence(contents: &str) -> J6Data {
     let tempo = read_setting(&contents, "TEMPO");
     let beat = read_setting(&contents, "BEAT");
     let meas = read_setting(&contents, "MEAS");
@@ -165,7 +181,7 @@ fn parse_sequence(contents: &str) -> SequenceOptions {
     
     let bars = read_bars(&contents);
 
-    SequenceOptions {
+    J6Data {
         tempo,
         beat,
         filter,
