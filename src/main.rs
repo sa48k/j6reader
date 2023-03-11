@@ -110,7 +110,7 @@ fn convert_bars_to_strings(bars: [[i32; 4]; 64]) -> Vec<String> {
             } else {
                 let mut note: String = note_lookup[&((value as usize) % 12)].clone();   // gets the note (C, F, G, G#, etc.) as String
                 let octave: f32 = (value as f32 / 12.0).floor();                        // calculate the octave
-                note.push_str(&(octave.to_string()));                                   // concat the strings
+                note.push_str(&(octave.to_string()));                                   // concat the strings to get e.g. "C#4"
                 song.push(note);
             }
         }
@@ -139,11 +139,11 @@ fn read_bars(contents: &str) -> [[i32; 4]; 64] {
     // this way we can implement full sequence editing functionality
     // maybe
     let mut bar: [i32; 4] = [0; 4];
-    let mut bars: [[i32; 4]; 64] = [[0; 4]; 64];
+    let mut bars: [[i32; 4]; 64] = [bar; 64];
     for line in contents.lines() {
         if line.starts_with("BAR") {
             // get the bar number
-            let bar_number: i32 = line[4..6].trim().parse::<i32>().unwrap(); // panic if not a valid integer
+            let bar_number: i32 = line[4..6].trim().parse::<i32>().unwrap(); // panics if not a valid integer
             let mut count = 0;
             for token in line.split(' ') {
                 if token.starts_with("NOTE") {
@@ -183,6 +183,8 @@ fn parse_sequence(contents: &str) -> J6Data {
 }
 
 fn parse_config(args: &[String]) -> Config {
+    // todo: raise error if the filepath doesn't end in .PRM
+
     if args.len() < 2 {
         panic!("not enough arguments");
     }
