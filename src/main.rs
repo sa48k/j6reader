@@ -7,11 +7,9 @@ use std::fs;
 use std::collections::HashMap;
 
 fn main() {
-    // Read args from the command line. 
-    // We are looking for a valid .PRM file
+    // Read args from the command line. We are looking for a valid .PRM file
     let args: Vec<String> = env::args().collect();
     let config = parse_config(&args);
-
     // println!("{} (options: {})", config.file_path, config.options);
 
     let contents = fs::read_to_string(&config.file_path).expect("Failed to read file");
@@ -28,12 +26,12 @@ fn main() {
     let full_song: Vec<String> = convert_bars_to_strings(sequence.bars);
     let number_of_bars = (sequence.meas * 4.0) as usize;    // get number of bars
     let song = &full_song[0..number_of_bars].to_vec();      // so we don't display null bars
-    let display = generate_display(song);
+    let display = generate_display(song);                   // when we generate the output
     println!("{}", display);
 }
 
 struct Config {
-    options: String,        // todo: do something with this
+    options: String,        // todo: do something with this. maybe options for 'read', 'convert [to midi]', etc.
     file_path: String,
 }
 
@@ -53,17 +51,9 @@ struct J6Data {
     bars: [[i32; 4]; 64]    // contains raw note values from the J-6, e.g. [38, 53, 55, 60] x64
 }
 
-fn get_pattern_number(filename: &str) -> PatternNumbers {
-    // this is bad and will panic if the file isn't in 
-    // the directory that we're running this program from
+fn get_pattern_number(filepath: &str) -> PatternNumbers {
+    let filename: &str = filepath.split('/').last().unwrap();
     let file_number: i32 = filename[6..8].parse().unwrap();
-    // todo: regex
-    // let s = "/data/J6_PTN25.PRM/J6_PTN25.PRM";
-    // let parts: Vec<&str> = s.split('/').collect();
-    // let last_part = parts.last().unwrap();
-    // let number_str = last_part[7..9].to_owned();
-    // let number = number_str.parse::<i32>().unwrap();
-    // println!("{}", number); // prints "25"
 
     let bank: i32 = (file_number as f32 / 8.0).ceil() as i32;
     let pattern: i32 = file_number - (8 * (&bank-1));
@@ -73,17 +63,19 @@ fn get_pattern_number(filename: &str) -> PatternNumbers {
 
 
 fn generate_display(song: &Vec<String>) -> String {
-    let mut output = String::new();
+    let mut output = String::from('\n');
+    // todo: split the song Vector into groups of 32, so we show 8 bars per row
+    // This means that long songs won't screw up the display when the terminal wraps
 
-    // add a header line showing the bar number (1-8 or whatever)
+    // add a header line showing the bar number (e.g. 1-8)
     for i in 0..(song.len()/4) {
         output += &(i+1).to_string();
         output += "\t";
     }
     output += "\n\n";
 
-    for y in 0..4 {                          // note1/2/3/4
-        for x in 0..((song.len()/4)) {           // bar number
+    for y in 0..4 {                                 // note1/2/3/4
+        for x in 0..((song.len()/4)) {              // bar number
             output += &song[x*4+y];
             output += "\t";
         }
