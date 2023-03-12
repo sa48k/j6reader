@@ -6,6 +6,8 @@ use std::fmt;
 use std::fs;
 use std::collections::HashMap;
 
+const J6_SETTINGS: &'static [&'static str] = &["meas", "beat", "transpose", "env"];
+
 fn main() {
     // Read args from the command line. We are looking for a valid .PRM file
     let args: Vec<String> = env::args().collect();
@@ -31,7 +33,7 @@ fn main() {
 }
 
 struct Config {
-    options: String,        // todo: do something with this. maybe options for 'read', 'convert [to midi]', etc.
+    options: String,        // todo: do something with this. maybe options for 'read', 'convert to [midi/json]', etc.
     file_path: String,
 }
 
@@ -46,13 +48,18 @@ impl fmt::Display for PatternNumbers {
 struct J6Data {
     beat: f32,
     meas: f32,              // number of measures (bars)
+    transpose: f32,
+    env: f32,
+    delay: f32,
+    reverb: f32,
+    resonance: f32,
     tempo: f32,
     filter: f32,
     bars: [[i32; 4]; 64]    // contains raw note values from the J-6, e.g. [38, 53, 55, 60] x64
 }
 
 fn get_pattern_number(filepath: &str) -> PatternNumbers {
-    let filename: &str = filepath.split('/').last().unwrap();
+    let filename: &str = filepath.split('/').last().unwrap();       // could have used std::path for this
     let file_number: i32 = filename[6..8].parse().unwrap();
 
     let bank: i32 = (file_number as f32 / 8.0).ceil() as i32;
@@ -61,10 +68,9 @@ fn get_pattern_number(filepath: &str) -> PatternNumbers {
     PatternNumbers(bank, pattern)
 }
 
-
 fn generate_display(song: &Vec<String>) -> String {
     let mut output = String::from('\n');
-    // todo: split the song Vector into groups of 32, so we show 8 bars per row
+    // todo: split the display into groups of 32, so we show 8 bars per row
     // This means that long songs won't screw up the display when the terminal wraps
 
     // add a header line showing the bar number (e.g. 1-8)
@@ -168,6 +174,11 @@ fn read_bars(contents: &str) -> [[i32; 4]; 64] {
 fn parse_sequence(contents: &str) -> J6Data {
     let tempo = read_setting(&contents, "TEMPO");
     let beat = read_setting(&contents, "BEAT");
+    let transpose = read_setting(&contents, "TRANSPOSE");
+    let env = read_setting(&contents, "ENV");
+    let delay = read_setting(&contents, "DELAY");
+    let reverb = read_setting(&contents, "REVERB");
+    let resonance = read_setting(&contents, "RESONANCE");
     let meas = read_setting(&contents, "MEAS");
     let filter = read_setting(&contents, "FILTER");
     
@@ -176,6 +187,11 @@ fn parse_sequence(contents: &str) -> J6Data {
     J6Data {
         tempo,
         beat,
+        transpose,
+        env,
+        delay,
+        reverb,
+        resonance,
         filter,
         meas,
         bars,
